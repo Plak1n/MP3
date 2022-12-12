@@ -155,7 +155,7 @@ def next_song():
     # Название следующей песни
     song = playlistbox.get(next)
     
-    #song = f'C:/mp3/audio/{song}.mp3'
+    song = f'{os.path.dirname(__file__)}\\music\\{song}'
 	
     # Загрузка и запуск песни
     pygame.mixer.music.load(song)
@@ -177,6 +177,7 @@ def previous_song():
     
     # Название прошлой песни
     song = playlistbox.get(previous)
+    song = f'{os.path.dirname(__file__)}\\music\\{song}'
     
     # Загрузка и проигрывание
     pygame.mixer.music.load(song)
