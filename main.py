@@ -15,8 +15,6 @@ paused = False
 stopped = False
 
 # Класс приложения
-
-
 class App(Tk):
     def __init__(self):
         super().__init__()
@@ -152,7 +150,11 @@ class App(Tk):
             value=1,
             command=self.volume)
         self.volume_slider.pack(anchor="sw", pady=20, padx=50)
-
+        
+        self.bind('<Control-o>',self.add_song)
+        self.bind('<Control-k>',self.add_many_songs)
+        self.bind('<Delete>',self.delete_song)
+        
         self.__create_widgets()
         self.__create_menu()
 
@@ -165,10 +167,10 @@ class App(Tk):
             label="Добавление музыки",
             menu=self.add_song_menu)
         self.add_song_menu.add_command(
-            label="Добавить одну песню в плейлиcт",
+            label="Добавить одну песню в плейлиcт", accelerator="Ctrl-O",
             command=self.add_song)
         self.add_song_menu.add_command(
-            label="Добавить много песен в плейлист",
+            label="Добавить много песен в плейлист", accelerator="Ctrl-K",
             command=self.add_many_songs)
 
         self.remove_song_menu = Menu(self.menu, tearoff=0)
@@ -176,7 +178,7 @@ class App(Tk):
             label="Удаление музыки",
             menu=self.remove_song_menu)
         self.remove_song_menu.add_command(
-            label="Удаление песни из плейлиста",
+            label="Удаление песни из плейлиста", accelerator="Del",
             command=self.delete_song)
         self.remove_song_menu.add_command(
             label="Удаление всех песен из плейлиста",
@@ -187,6 +189,9 @@ class App(Tk):
         self.help_menu.add_command(
             label="О программе",
             command=self.about_program)
+        self.help_menu_sub = Menu(self.help_menu, tearoff=0)
+        self.help_menu.add_cascade(label="Команды", menu=self.help_menu_sub)
+        self.help_menu_sub.add_command(label="Придумать команды",command=self.commands)
 
     def __create_widgets(self):
         self.status_bar = Label(text='', relief=GROOVE, bd=1, anchor=E)
@@ -201,46 +206,48 @@ class App(Tk):
         \nАвтор: Плакхин Даниил
         \nOC: {sys.platform}
         \nПрограмма была написана на Python 3.10.6 ''')
+        
+    def commands(self,event=None):
+        #ToDo add commands
+        pass
 
-    def add_song(self):
+    def add_song(self, event=None):
         song = filedialog.askopenfilename(
             title="Выберите трек", filetypes=(
                 ("MP3 Файлы ", "*.mp3"),))
-        if song.find(os.path.dirname(__file__)) != -1:
-            #move(song, f"{os.path.dirname(__file__)}\music", )
-            pass
         song_name = re.sub(r"[\w+:]+/", "", song)
+        song_name = song_name.replace(".mp3","")
         if song_name in self.playlistbox.get(0, END):
             messagebox.showwarning(
                 title="Ошибка добавления песни",
                 message="Песня уже существует в плейлисте")
         else:
-            self.songs[song_name] = song
-            self.playlistbox.insert(END, song_name)
+            if song not in [None,"",]:
+                self.songs[song_name] = song
+                self.playlistbox.insert(END, song_name)
 
-    def add_many_songs(self):
+    def add_many_songs(self, event=None):
         songs = filedialog.askopenfilenames(
             title="Выберите треки", filetypes=(
                 ("MP3 Файлы ", "*.mp3"),), multiple=True)
         for song in songs:
-            if song.find(os.path.dirname(__file__)) != -1:
-                #move(song, f"{os.path.dirname(__file__)}\music", )
-                print('Move')
             song_name = re.sub(r"[\w+:]+/", "", song)
+            song_name = song_name.replace(".mp3","")
             if song_name in self.playlistbox.get(0, END):
                 messagebox.showwarning(
                     title="Ошибка добавления песни",
                     message="Одна или несколько песен уже существует в плейлисте")
                 break
             else:
-                self.songs[song_name] = song
-                self.playlistbox.insert(END, song_name)
+                if song not in [None,"",]:
+                    self.songs[song_name] = song
+                    self.playlistbox.insert(END, song_name)
 
-    def delete_song(self):
+    def delete_song(self, event=None):
         self.songs.pop(self.playlistbox.get(ANCHOR))
         self.playlistbox.delete(ANCHOR)
 
-    def delete_all_songs(self):
+    def delete_all_songs(self, event=None):
         self.playlistbox.delete(0, END)
         self.songs.clear()
 
@@ -285,22 +292,21 @@ class App(Tk):
 
             # Данные на статус бар
             self.status_bar.config(
-                text=f"Времени прошло: {converted_current_time} из {converted_song_length}  ")
+                text=f"{song}: {converted_current_time} из {converted_song_length}  ")
 
         # Добавляем текущее время в статус бар
         if current_time > 0:
             self.status_bar.config(
-                text=f"Времени прошло: {converted_current_time} из {converted_song_length}  ")
+                text=f"{song}: {converted_current_time} из {converted_song_length}  ")
 
         # Создаем цикл чтобы видеть время каждую секунду
         self.status_bar.after(1000, self.play_time)
 
-    def play(self):
+    def play(self, event=None):
         global stopped
         stopped = False
 
         song = self.playlistbox.get(ACTIVE)
-        #song = f'{os.path.dirname(__file__)}\music\{song}'
 
         # Загрузка песню с pygame.mixer
         pygame.mixer.music.load(self.songs[song])
@@ -312,7 +318,7 @@ class App(Tk):
         # Получить время песни
         self.play_time()
 
-    def stop(self):
+    def stop(self, event=None):
         # Остановить песню
         pygame.mixer.music.stop()
         self.playlistbox.selection_clear(ACTIVE)
@@ -332,7 +338,6 @@ class App(Tk):
 
         # Название прошлой песни
         song = self.playlistbox.get(previous)
-        #song = f'{os.path.dirname(__file__)}\music\{song}'
 
         # Загрузка и проигрывание
         pygame.mixer.music.load(self.songs[song])
@@ -352,7 +357,6 @@ class App(Tk):
 
         # Название следующей песни
         song = self.playlistbox.get(next)
-        #song = f'{os.path.dirname(__file__)}\music\{song}'
 
         # Загрузка и запуск песни
         pygame.mixer.music.load(self.songs[song])
@@ -363,7 +367,7 @@ class App(Tk):
         self.playlistbox.activate(next)
         self.playlistbox.selection_set(next, last=None)
 
-    def pause(self, is_paused):
+    def pause(self, is_paused, event=None):
         global paused
         paused = is_paused
         if paused:
@@ -378,7 +382,6 @@ class App(Tk):
 
     def slide(self, x):
         song = self.playlistbox.get(ACTIVE)
-        #song = f'{os.path.dirname(__file__)}\\music\\{song}'
 
         # Load song with pygame mixer
         pygame.mixer.music.load(self.songs[song])
