@@ -1,3 +1,5 @@
+# This is simple mp3-player
+
 from tkinter import *
 from tkinter import filedialog
 from tkinter import messagebox
@@ -8,13 +10,16 @@ import pygame
 import time
 import tkinter.ttk as ttk
 import re
-from shutil import move
-from PIL import Image, ImageTk
+import csv
+
 
 paused = False
 stopped = False
+playlist_songs = {}
 
-# Класс приложения
+os.chdir(os.path.dirname(__file__))
+
+# Application class
 class App(Tk):
     def __init__(self):
         super().__init__()
@@ -43,7 +48,7 @@ class App(Tk):
             relx=0.075,
             rely=0.165,
             relwidth=0.195,
-            relheight=0.28)  # 66.5 108.6
+            relheight=0.28)
 
         self.playlistbox = Listbox(
             container,
@@ -55,7 +60,6 @@ class App(Tk):
             selectbackground="#0f1a2b",
             selectforeground="green")
         self.playlistbox.pack(anchor="s", pady=8, padx=10)
-        self.songs = {}
 
         self.frames = {}
         frame = Frame(container, bg="#0f1a2b")
@@ -151,9 +155,9 @@ class App(Tk):
             command=self.volume)
         self.volume_slider.pack(anchor="sw", pady=20, padx=50)
         
-        self.bind('<Control-o>',self.add_song)
-        self.bind('<Control-k>',self.add_many_songs)
-        self.bind('<Delete>',self.delete_song)
+        self.bind('<Control-o>', self.add_song)
+        self.bind('<Control-k>', self.add_many_songs)
+        self.bind('<Delete>', self.delete_song)
         
         self.__create_widgets()
         self.__create_menu()
@@ -190,8 +194,6 @@ class App(Tk):
             label="О программе",
             command=self.about_program)
         self.help_menu_sub = Menu(self.help_menu, tearoff=0)
-        self.help_menu.add_cascade(label="Команды", menu=self.help_menu_sub)
-        self.help_menu_sub.add_command(label="Придумать команды",command=self.commands)
 
     def __create_widgets(self):
         self.status_bar = Label(text='', relief=GROOVE, bd=1, anchor=E)
@@ -206,10 +208,6 @@ class App(Tk):
         \nАвтор: Плакхин Даниил
         \nOC: {sys.platform}
         \nПрограмма была написана на Python 3.10.6 ''')
-        
-    def commands(self,event=None):
-        #ToDo add commands
-        pass
 
     def add_song(self, event=None):
         song = filedialog.askopenfilename(
@@ -223,7 +221,7 @@ class App(Tk):
                 message="Песня уже существует в плейлисте")
         else:
             if song not in [None,"",]:
-                self.songs[song_name] = song
+                playlist_songs[song_name] = song
                 self.playlistbox.insert(END, song_name)
 
     def add_many_songs(self, event=None):
@@ -240,66 +238,61 @@ class App(Tk):
                 break
             else:
                 if song not in [None,"",]:
-                    self.songs[song_name] = song
+                    songs[song_name] = song
                     self.playlistbox.insert(END, song_name)
 
     def delete_song(self, event=None):
-        self.songs.pop(self.playlistbox.get(ANCHOR))
+        playlist_songs.pop(self.playlistbox.get(ANCHOR))
         self.playlistbox.delete(ANCHOR)
 
     def delete_all_songs(self, event=None):
         self.playlistbox.delete(0, END)
-        self.songs.clear()
+        playlist_songs.clear()
 
-    # Функция для взаимодействия с временем
+    # Dealing with time
     def play_time(self):
-        # Проверка если песня остановлена
         if stopped:
             return
 
-        # Узнаем время песни
+        # Get song time
         current_time = pygame.mixer.music.get_pos() / 1000
-        # Конвертиурем песню в корректный формат
+        # Convert to time format
         converted_current_time = time.strftime(
             "%M:%S", time.gmtime(current_time))
 
-        # Переинование
         song = self.playlistbox.get(ACTIVE)
-        #song = f'{os.path.dirname(__file__)}\music\{song}'
 
-        # Найти длину трека
-        song_mut = MP3(self.songs[song])
+        # Find song length
+        song_mut = MP3(playlist_songs[song])
         global song_length
         song_length = song_mut.info.length
-        # Конвертиурем в временной формат
+        # Convert song length
         converted_song_length = time.strftime(
             "%M:%S", time.gmtime(song_length))
 
-        # Проверка закончилась ли песня
         if int(self.song_slider.get()) == int(song_length):
             self.stop()
         elif paused:
-            # Проверка на паузе трек или нет
             pass
         else:
-            # Передвинуть на 1 секунду
+            # Change time 
             next_time = int(self.song_slider.get()) + 1
             self.song_slider.config(to=song_length, value=next_time)
 
-            # Конвертируем ползунок в временной формат
+            # Convert slider 
             converted_current_time = time.strftime(
                 "%M:%S", time.gmtime(int(self.song_slider.get())))
 
-            # Данные на статус бар
+            # To status bar
             self.status_bar.config(
                 text=f"{song}: {converted_current_time} из {converted_song_length}  ")
 
-        # Добавляем текущее время в статус бар
+        # Add current time
         if current_time > 0:
             self.status_bar.config(
                 text=f"{song}: {converted_current_time} из {converted_song_length}  ")
 
-        # Создаем цикл чтобы видеть время каждую секунду
+        # Loop to see evry second
         self.status_bar.after(1000, self.play_time)
 
     def play(self, event=None):
@@ -308,18 +301,16 @@ class App(Tk):
 
         song = self.playlistbox.get(ACTIVE)
 
-        # Загрузка песню с pygame.mixer
-        pygame.mixer.music.load(self.songs[song])
-        # Запуск песни с pygame.mixer
+        # Load song
+        pygame.mixer.music.load(playlist_songs[song])
         pygame.mixer.music.play(loops=0)
         self.status_bar.config(text="")
         self.song_slider.config(value=0)
 
-        # Получить время песни
+        # Get time
         self.play_time()
 
     def stop(self, event=None):
-        # Остановить песню
         pygame.mixer.music.stop()
         self.playlistbox.selection_clear(ACTIVE)
 
@@ -336,14 +327,13 @@ class App(Tk):
         previous = self.playlistbox.curselection()
         previous = previous[0] - 1
 
-        # Название прошлой песни
+        # Previous song
         song = self.playlistbox.get(previous)
 
-        # Загрузка и проигрывание
-        pygame.mixer.music.load(self.songs[song])
+        pygame.mixer.music.load(playlist_songs[song])
         pygame.mixer.music.play(loops=0)
 
-        # Очистка и выбор прошлого трека
+        # Clear
         self.playlistbox.selection_clear(0, END)
         self.playlistbox.activate(previous)
         self.playlistbox.selection_set(previous)
@@ -355,14 +345,12 @@ class App(Tk):
         next = self.playlistbox.curselection()
         next = next[0] + 1
 
-        # Название следующей песни
+        # Next song
         song = self.playlistbox.get(next)
 
-        # Загрузка и запуск песни
-        pygame.mixer.music.load(self.songs[song])
+        pygame.mixer.music.load(playlist_songs[song])
         pygame.mixer.music.play(loops=0)
 
-        # Очистка и выделение следующего трека
         self.playlistbox.selection_clear(0, END)
         self.playlistbox.activate(next)
         self.playlistbox.selection_set(next, last=None)
@@ -384,11 +372,12 @@ class App(Tk):
         song = self.playlistbox.get(ACTIVE)
 
         # Load song with pygame mixer
-        pygame.mixer.music.load(self.songs[song])
+        pygame.mixer.music.load(playlist_songs[song])
         # Play song with pygame mixer
         pygame.mixer.music.play(loops=0, start=self.song_slider.get())
 
 
+# Run the application
 if __name__ == "__main__":
     app = App()
     app.mainloop()
