@@ -10,7 +10,7 @@ import pygame
 import time
 import tkinter.ttk as ttk
 import re
-import csv
+import json
 
 
 paused = False
@@ -60,7 +60,7 @@ class App(Tk):
             selectbackground="#0f1a2b",
             selectforeground="green")
         self.playlistbox.pack(anchor="s", pady=8, padx=10)
-
+       
         self.frames = {}
         frame = Frame(container, bg="#0f1a2b")
         frame.pack(fill=BOTH, anchor="center")
@@ -161,6 +161,16 @@ class App(Tk):
         
         self.__create_widgets()
         self.__create_menu()
+        self.load_playlist()
+    
+    def load_playlist(self):
+        with open("songs.json", "r") as file:
+            songs = json.load(file)
+            print(songs)
+            global playlist_songs
+            playlist_songs = songs
+            for s in playlist_songs.keys():
+                self.playlistbox.insert(END,s)
 
     def __create_menu(self):
         self.menu = Menu()
@@ -223,7 +233,9 @@ class App(Tk):
             if song not in [None,"",]:
                 playlist_songs[song_name] = song
                 self.playlistbox.insert(END, song_name)
-
+                with open('songs.json', 'w') as file:
+                    json.dump(playlist_songs, file)
+        
     def add_many_songs(self, event=None):
         songs = filedialog.askopenfilenames(
             title="Выберите треки", filetypes=(
@@ -238,16 +250,23 @@ class App(Tk):
                 break
             else:
                 if song not in [None,"",]:
-                    songs[song_name] = song
+                    playlist_songs[song_name] = song
                     self.playlistbox.insert(END, song_name)
+                    print(playlist_songs)
+        with open('songs.json', 'w') as file:
+            json.dump(playlist_songs,file)
 
     def delete_song(self, event=None):
         playlist_songs.pop(self.playlistbox.get(ANCHOR))
         self.playlistbox.delete(ANCHOR)
+        with open('songs.json', 'w') as file:
+            json.dump(playlist_songs, file)
 
     def delete_all_songs(self, event=None):
         self.playlistbox.delete(0, END)
         playlist_songs.clear()
+        with open('songs.json', 'w') as file:
+            json.dump(playlist_songs, file)
 
     # Dealing with time
     def play_time(self):
