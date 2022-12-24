@@ -11,6 +11,7 @@ import time
 import tkinter.ttk as ttk
 import re
 import json
+import platform
 
 
 paused = False
@@ -23,17 +24,17 @@ os.chdir(os.path.dirname(__file__))
 class App(Tk):
     def __init__(self):
         super().__init__()
-
         pygame.mixer.init()
 
         self.title("MP3-плеер")
         self.geometry("920x670+290+85")
         self.resizable(False, False)
-
+        self.config(bg="#0f1a2b")
         icon = PhotoImage(
             file=f"{os.path.dirname(__file__)}\\images\\logo.png")
         self.iconphoto(False, icon)
 
+        # Main_frame
         container = Frame(self, bg="#0f1a2b")
         container.pack(fill=BOTH, expand=True)
 
@@ -41,14 +42,7 @@ class App(Tk):
             file=f"{os.path.dirname(__file__)}\\images\\top.png")
         top = Label(container, image=self.Top, bg="#0f1a2b", relief=FLAT)
         top.pack(side="top", fill=BOTH)
-        self.Logo = PhotoImage(
-            file=f"{os.path.dirname(__file__)}\\images\\logo.png")
-        self.logo = Label(image=self.Logo, bg="#0f1a2b", borderwidth=0)
-        self.logo.place(
-            relx=0.075,
-            rely=0.165,
-            relwidth=0.195,
-            relheight=0.28)
+        
 
         self.playlistbox = Listbox(
             container,
@@ -58,6 +52,7 @@ class App(Tk):
             height=15,
             font="AzeretMono 8 bold",
             selectbackground="#0f1a2b",
+            selectmode = MULTIPLE,
             selectforeground="green")
         self.playlistbox.pack(anchor="s", pady=8, padx=10)
        
@@ -158,19 +153,26 @@ class App(Tk):
         self.bind('<Control-o>', self.add_song)
         self.bind('<Control-k>', self.add_many_songs)
         self.bind('<Delete>', self.delete_song)
+        self.bind('<Control-a>', self.select_all)
         
         self.__create_widgets()
         self.__create_menu()
         self.load_playlist()
     
+    def select_all(self,event=None):
+        self.playlistbox.selection_set(ALL)
+    
     def load_playlist(self):
-        with open("songs.json", "r") as file:
-            songs = json.load(file)
-            print(songs)
-            global playlist_songs
-            playlist_songs = songs
-            for s in playlist_songs.keys():
-                self.playlistbox.insert(END,s)
+        if os.path.exists("songs.json"):
+            with open("songs.json", "r") as file:
+                songs = json.load(file)
+                global playlist_songs
+                playlist_songs = songs
+                for s in playlist_songs.keys():
+                    self.playlistbox.insert(END,s)
+        else:
+            with open("songs.json","w") as file:
+                json.dump(playlist_songs,file)
 
     def __create_menu(self):
         self.menu = Menu()
@@ -206,6 +208,15 @@ class App(Tk):
         self.help_menu_sub = Menu(self.help_menu, tearoff=0)
 
     def __create_widgets(self):
+        self.Logo = PhotoImage(
+            file=f"{os.path.dirname(__file__)}\\images\\logo.png")
+        self.logo = Label(image=self.Logo, bg="#0f1a2b", borderwidth=0)
+        self.logo.place(
+            relx=0.075,
+            rely=0.165,
+            relwidth=0.195,
+            relheight=0.28)
+        
         self.status_bar = Label(text='', relief=GROOVE, bd=1, anchor=E)
         self.columnconfigure(0, weight=3)
         self.rowconfigure(6, weight=4)
@@ -216,7 +227,7 @@ class App(Tk):
             title='ПC "MP3-плеер"',
             message=f'''Версия: 1.0
         \nАвтор: Плакхин Даниил
-        \nOC: {sys.platform}
+        \nOC: {platform.system()} {platform.release()}
         \nПрограмма была написана на Python 3.10.6 ''')
 
     def add_song(self, event=None):
@@ -252,13 +263,15 @@ class App(Tk):
                 if song not in [None,"",]:
                     playlist_songs[song_name] = song
                     self.playlistbox.insert(END, song_name)
-                    print(playlist_songs)
         with open('songs.json', 'w') as file:
             json.dump(playlist_songs,file)
 
     def delete_song(self, event=None):
-        playlist_songs.pop(self.playlistbox.get(ANCHOR))
-        self.playlistbox.delete(ANCHOR)
+        selection = self.playlistbox.curselection()
+        for i in range(len(selection)):
+            print(selection[i])
+            playlist_songs.pop(self.playlistbox.get(selection[i]))
+        self.playlistbox.delete(selection[0])
         with open('songs.json', 'w') as file:
             json.dump(playlist_songs, file)
 
