@@ -17,6 +17,7 @@ import platform
 paused = False
 stopped = False
 playlist_songs = {}
+current_song = ""
 
 os.chdir(os.path.dirname(__file__))
 
@@ -52,9 +53,9 @@ class App(Tk):
             height=15,
             font="AzeretMono 8 bold",
             selectbackground="#0f1a2b",
-            selectmode = MULTIPLE,
+            selectmode = EXTENDED,
             selectforeground="green")
-        self.playlistbox.pack(anchor="s", pady=8, padx=10)
+        self.playlistbox.pack(anchor="s", pady=12, padx=10)
        
         self.frames = {}
         frame = Frame(container, bg="#0f1a2b")
@@ -113,12 +114,12 @@ class App(Tk):
             borderwidth=0,
             activebackground="#0f1a2b")
 
-        empy_button.pack(pady=2, side="left", padx=123)
-        back_button.pack(pady=2, side="left", padx=15)
-        forward_button.pack(pady=2, side="left", padx=15)
-        play_button.pack(pady=2, side="left", padx=15)
-        pause_button.pack(pady=2, side="left", padx=15)
-        stop_button.pack(pady=2, side="left", padx=15)
+        empy_button.pack(pady=7, side="left", padx=123)
+        back_button.pack(pady=7, side="left", padx=15)
+        forward_button.pack(pady=7, side="left", padx=15)
+        play_button.pack(pady=7, side="left", padx=15)
+        pause_button.pack(pady=7, side="left", padx=15)
+        stop_button.pack(pady=7, side="left", padx=15)
 
         self.song_slider = ttk.Scale(
             container,
@@ -154,10 +155,15 @@ class App(Tk):
         self.bind('<Control-k>', self.add_many_songs)
         self.bind('<Delete>', self.delete_song)
         self.bind('<Control-a>', self.select_all)
+        self.bind('<space>', self.bindf)
+        self.bind('<End>',self.delete_all_songs)
         
         self.__create_widgets()
         self.__create_menu()
         self.load_playlist()
+    
+    def bindf(self, event=None):
+        self.pause(paused)
     
     def select_all(self,event=None):
         self.playlistbox.selection_set(ALL)
@@ -188,6 +194,9 @@ class App(Tk):
         self.add_song_menu.add_command(
             label="Добавить много песен в плейлист", accelerator="Ctrl-K",
             command=self.add_many_songs)
+        self.add_song_menu.add_separator()
+        self.add_song_menu.add_command(label="Закрыть", command=self.exit, accelerator="Alt-F4")
+        
 
         self.remove_song_menu = Menu(self.menu, tearoff=0)
         self.menu.add_cascade(
@@ -197,7 +206,7 @@ class App(Tk):
             label="Удаление песни из плейлиста", accelerator="Del",
             command=self.delete_song)
         self.remove_song_menu.add_command(
-            label="Удаление всех песен из плейлиста",
+            label="Удаление всех песен из плейлиста", accelerator="End",
             command=self.delete_all_songs)
 
         self.help_menu = Menu(self.menu, tearoff=0)
@@ -229,6 +238,11 @@ class App(Tk):
         \nАвтор: Плакхин Даниил
         \nOC: {platform.system()} {platform.release()}
         \nПрограмма была написана на Python 3.10.6 ''')
+    
+    def exit(self, event=None):
+        answer = messagebox.askokcancel('Выход', 'Вы точно хотите выйти?')
+        if answer:
+            self.quit()
 
     def add_song(self, event=None):
         song = filedialog.askopenfilename(
@@ -269,7 +283,6 @@ class App(Tk):
     def delete_song(self, event=None):
         selection = self.playlistbox.curselection()
         for i in range(len(selection)):
-            print(selection[i])
             playlist_songs.pop(self.playlistbox.get(selection[i]))
         self.playlistbox.delete(selection[0])
         with open('songs.json', 'w') as file:
@@ -293,9 +306,8 @@ class App(Tk):
             "%M:%S", time.gmtime(current_time))
 
         song = self.playlistbox.get(ACTIVE)
-
         # Find song length
-        song_mut = MP3(playlist_songs[song])
+        song_mut = MP3(playlist_songs[current_song])
         global song_length
         song_length = song_mut.info.length
         # Convert song length
@@ -317,12 +329,12 @@ class App(Tk):
 
             # To status bar
             self.status_bar.config(
-                text=f"{song}: {converted_current_time} из {converted_song_length}  ")
+                text=f"{current_song}: {converted_current_time} из {converted_song_length}  ")
 
         # Add current time
         if current_time > 0:
             self.status_bar.config(
-                text=f"{song}: {converted_current_time} из {converted_song_length}  ")
+                text=f"{current_song}: {converted_current_time} из {converted_song_length}  ")
 
         # Loop to see evry second
         self.status_bar.after(1000, self.play_time)
@@ -332,6 +344,8 @@ class App(Tk):
         stopped = False
 
         song = self.playlistbox.get(ACTIVE)
+        global current_song
+        current_song = song
 
         # Load song
         pygame.mixer.music.load(playlist_songs[song])
@@ -361,6 +375,8 @@ class App(Tk):
 
         # Previous song
         song = self.playlistbox.get(previous)
+        global current_song
+        current_song = song
 
         pygame.mixer.music.load(playlist_songs[song])
         pygame.mixer.music.play(loops=0)
@@ -379,6 +395,8 @@ class App(Tk):
 
         # Next song
         song = self.playlistbox.get(next)
+        global current_song
+        current_song = song
 
         pygame.mixer.music.load(playlist_songs[song])
         pygame.mixer.music.play(loops=0)
