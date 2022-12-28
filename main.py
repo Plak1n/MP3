@@ -375,6 +375,9 @@ class App(Tk):
 
         # Previous song
         song = self.playlistbox.get(previous)
+        if song == "":
+            previous = self.playlistbox.size() - 1
+            song = self.playlistbox.get(previous)
         global current_song
         current_song = song
 
@@ -395,6 +398,10 @@ class App(Tk):
 
         # Next song
         song = self.playlistbox.get(next)
+        if song == "":
+            song = self.playlistbox.get(0)
+            next = 0
+            
         global current_song
         current_song = song
 
