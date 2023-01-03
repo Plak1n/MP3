@@ -71,6 +71,9 @@ class App(Tk):
             file=f"{os.path.dirname(__file__)}\\images\\pause50.png")
         self.stopbtnimg = PhotoImage(
             file=f"{os.path.dirname(__file__)}\\images\\stop50.png")
+        self.infoimg = PhotoImage(
+            file=f"{os.path.dirname(__file__)}\\images\\info.png")
+        
 
         back_button = Button(
             frame,
@@ -110,16 +113,26 @@ class App(Tk):
         empy_button = Button(
             frame,
             bg="#0f1a2b",
-            text="",
+            text='',
             borderwidth=0,
             activebackground="#0f1a2b")
+        dop_button = Button(
+            frame,
+            bg="#0f1a2b",
+            image=self.infoimg,
+            borderwidth=0,
+            activebackground="#0f1a2b",
+            command=self.dop
+        )
 
-        empy_button.pack(pady=7, side="left", padx=123)
+        empy_button.pack(pady=7, side="left", padx=117)
         back_button.pack(pady=7, side="left", padx=15)
         forward_button.pack(pady=7, side="left", padx=15)
         play_button.pack(pady=7, side="left", padx=15)
         pause_button.pack(pady=7, side="left", padx=15)
         stop_button.pack(pady=7, side="left", padx=15)
+        dop_button.pack(pady=7, side="left", padx=15)
+        
 
         self.song_slider = ttk.Scale(
             container,
@@ -161,7 +174,7 @@ class App(Tk):
         self.__create_widgets()
         self.__create_menu()
         self.load_playlist()
-    
+     
     def bindf(self, event=None):
         self.pause(paused)
     
@@ -197,7 +210,6 @@ class App(Tk):
         self.add_song_menu.add_separator()
         self.add_song_menu.add_command(label="Закрыть", command=self.exit, accelerator="Alt-F4")
         
-
         self.remove_song_menu = Menu(self.menu, tearoff=0)
         self.menu.add_cascade(
             label="Удаление музыки",
@@ -260,6 +272,11 @@ class App(Tk):
                 self.playlistbox.insert(END, song_name)
                 with open('songs.json', 'w') as file:
                     json.dump(playlist_songs, file)
+                    
+    def dop(self):
+        self.dop_menu = Menu(tearoff=0)
+        self.dop_menu.add_command(label="Узнать о треке", command=self.about_music)
+        self.dop_menu.post(1000,650)
         
     def add_many_songs(self, event=None):
         songs = filedialog.askopenfilenames(
@@ -311,7 +328,7 @@ class App(Tk):
         global song_length
         song_length = song_mut.info.length
         # Convert song length
-        converted_song_length = time.strftime(
+        self.converted_song_length = time.strftime(
             "%M:%S", time.gmtime(song_length))
 
         if int(self.song_slider.get()) == int(song_length):
@@ -324,21 +341,39 @@ class App(Tk):
             self.song_slider.config(to=song_length, value=next_time)
 
             # Convert slider 
-            converted_current_time = time.strftime(
+            self.converted_current_time = time.strftime(
                 "%M:%S", time.gmtime(int(self.song_slider.get())))
 
             # To status bar
             self.status_bar.config(
-                text=f"{current_song}: {converted_current_time} из {converted_song_length}  ")
+                text=f"{current_song}: {self.converted_current_time} из {self.converted_song_length}  ")
 
         # Add current time
         if current_time > 0:
             self.status_bar.config(
-                text=f"{current_song}: {converted_current_time} из {converted_song_length}  ")
+                text=f"{current_song}: {self.converted_current_time} из {self.converted_song_length}  ")
 
         # Loop to see evry second
         self.status_bar.after(1000, self.play_time)
 
+    def about_music(self, event=None):
+        global song_length
+        s = self.playlistbox.curselection()
+        song = self.playlistbox.get(s)
+        if song == "":
+            messagebox.showwarning(title="Трек не выбран", message="Выберите трек")
+            return
+        genres = ["Hip-Hop","Rap", "Pop", "RNB"]
+        genre_to_show = ''
+        song_inf = re.findall(r"\w+", song)
+        if song_inf[0] == 'Hilltop_Hoods_':
+            genre_to_show = genres[0]
+        elif song_inf[0] == 'Eminem_':
+            genre_to_show = genres[1]
+        else:
+            genre_to_show = "Неизвестен"
+        messagebox.showinfo(title="О треке", message=f'''Исполнитель: {song_inf[0].replace('_', ' ')}\nНазвание:{song_inf[1].replace('_', ' ')}\nЖанр: {genre_to_show}''')
+    
     def play(self, event=None):
         global stopped
         stopped = False
