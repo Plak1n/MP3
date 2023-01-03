@@ -352,6 +352,9 @@ class App(Tk):
         if current_time > 0:
             self.status_bar.config(
                 text=f"{current_song}: {self.converted_current_time} из {self.converted_song_length}  ")
+        
+        if self.converted_current_time == self.converted_song_length:
+            self.next_song()
 
         # Loop to see evry second
         self.status_bar.after(1000, self.play_time)
@@ -464,9 +467,10 @@ class App(Tk):
         song = self.playlistbox.get(ACTIVE)
 
         # Load song with pygame mixer
-        pygame.mixer.music.load(playlist_songs[song])
+        #pygame.mixer.music.load(playlist_songs[song])
         # Play song with pygame mixer
-        pygame.mixer.music.play(loops=0, start=self.song_slider.get())
+        #pygame.mixer.music.play(loops=0, start=self.song_slider.get())
+        pygame.mixer.music.set_pos(self.song_slider.get())
 
 
 # Run the application
