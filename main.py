@@ -4,6 +4,8 @@ from tkinter import *
 from tkinter import filedialog
 from tkinter import messagebox
 from mutagen.mp3 import MP3
+from selenium import webdriver
+from selenium.webdriver.common.by import By
 import os
 import sys
 import pygame
@@ -369,13 +371,32 @@ class App(Tk):
         genres = ["Hip-Hop","Rap", "Pop", "RNB"]
         genre_to_show = ''
         song_inf = re.findall(r"\w+", song)
+        text_author = ''
+        text_label = ''
         if song_inf[0] == 'Hilltop_Hoods_':
             genre_to_show = genres[0]
+            text_author = "Daniel Smith, Michael Stafford"
+            text_label = 'Universal Music Australia'
+            if song_inf[1] == '_The_Nosebleed_Section_':
+                text_label = 'Island Records Australia'
         elif song_inf[0] == 'Eminem_':
+            text_author = 'Marshall Mathers'
+            text_label = 'Aftermath'
             genre_to_show = genres[1]
         else:
-            genre_to_show = "Неизвестен"
-        messagebox.showinfo(title="О треке", message=f'''Исполнитель: {song_inf[0].replace('_', ' ')}\nНазвание:{song_inf[1].replace('_', ' ')}\nЖанр: {genre_to_show}''')
+            genre_to_show = "Pop"
+            text_author = "Неизвестен"
+            text_label = "Неизвестен" 
+        
+        messagebox.showinfo(title="О треке", message=f'''Исполнитель: {song_inf[0].replace('_', ' ')}\nНазвание:{song_inf[1].replace('_', ' ')}\nЖанр: {genre_to_show}\nАвтор текста: {text_author}\nЛейбл: {text_label}''')
+    
+    def search_info(self,song):
+        driver = webdriver.Chrome()
+        driver.get("https://www.lambdatest.com")
+        text_form = driver.find_element_by_id(f"{song}")
+        first_form_input = driver.find_element_by_class_name(f"{self.playlistbox[current_song]}")
+        driver.find_element(By.XPATH, '//input[name()="password"]')
+        driver.find_elements(By.XPATH, '//input')
     
     def play(self, event=None):
         global stopped
